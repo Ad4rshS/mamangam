@@ -4,7 +4,7 @@ import { FALLBACK_MATCHES, getFallbackSquad } from "./fallbackData";
 
 // Support both VITE_GEMINI_API_KEY (Vite standard) and GEMINI_API_KEY
 const geminiKey = import.meta.env.VITE_GEMINI_API_KEY || process.env.GEMINI_API_KEY;
-const ai = geminiKey ? new GoogleGenAI({ apiKey: geminiKey }) : null;
+const ai: any = geminiKey ? new GoogleGenAI(geminiKey) : null;
 
 if (ai) {
   console.log("🚀 MamanGam: Gemini AI Service initialized.");
@@ -32,8 +32,9 @@ function extractJSON(text: string): string {
 export async function fetchIPLMatches(): Promise<Match[]> {
   if (ai) {
     try {
-      const response = await ai.getGenerativeModel({ model: "gemini-2.0-flash" }).generateContent({
-        contents: [{ role: "user", parts: [{ text: `You are an IPL 2026 expert. Provide a JSON array of 8 upcoming matches for TATA IPL 2026.
+      const response = await ai.models.generateContent({
+        model: "gemini-2.0-flash",
+        contents: `You are an IPL 2026 expert. Provide a JSON array of 8 upcoming matches for TATA IPL 2026.
 Return ONLY a raw JSON array of objects with these fields:
 - id: string (unique)
 - team1: string (full name)
@@ -44,10 +45,10 @@ Return ONLY a raw JSON array of objects with these fields:
 - venue: string
 - status: "upcoming"
 - series: "TATA IPL 2026"
-- lineupsOut: false` }] }]
+- lineupsOut: false`
       });
 
-      const raw = response.response.text() ?? "";
+      const raw = response.text ?? "";
       if (raw) {
         const cleaned = extractJSON(raw);
         const matches: Match[] = JSON.parse(cleaned);
@@ -67,20 +68,21 @@ export async function fetchSquads(matchId: string, team1: string, team2: string)
   if (ai) {
     try {
       // Small delay to prevent 429
-      await sleep(1000); 
+      await sleep(1500); 
 
-      const response = await ai.getGenerativeModel({ model: "gemini-2.0-flash" }).generateContent({
-        contents: [{ role: "user", parts: [{ text: `List the expected playing XI squads for IPL 2026 match: ${team1} vs ${team2}.
+      const response = await ai.models.generateContent({
+        model: "gemini-2.0-flash",
+        contents: `List the expected playing XI squads for IPL 2026 match: ${team1} vs ${team2}.
 Return ONLY a raw JSON array of objects with:
 - id: string (unique)
 - name: string
 - team: string
 - position: "WK" | "BAT" | "AR" | "BOWL"
 - credits: number (8-12)
-- playing: true` }] }]
+- playing: true`
       });
 
-      const raw = response.response.text() ?? "";
+      const raw = response.text ?? "";
       if (raw) {
         const cleaned = extractJSON(raw);
         const data = JSON.parse(cleaned);
@@ -104,11 +106,12 @@ export async function fetchLiveScore(matchId: string, team1: string, team2: stri
   if (ai) {
     try {
       await sleep(500);
-      const response = await ai.getGenerativeModel({ model: "gemini-2.0-flash" }).generateContent({
-        contents: [{ role: "user", parts: [{ text: `Generate a realistic live score for ${team1} vs ${team2} as if it's currently happening. 
-Return ONLY raw JSON: { "score1": "...", "score2": "...", "overs": "...", "summary": "...", "batters": [...], "bowlers": [...] }` }] }]
+      const response = await ai.models.generateContent({
+        model: "gemini-2.0-flash",
+        contents: `Generate a realistic live score for ${team1} vs ${team2} as if it's currently happening. 
+Return ONLY raw JSON: { "score1": "...", "score2": "...", "overs": "...", "summary": "...", "batters": [...], "bowlers": [...] }`
       });
-      const raw = response.response.text() ?? "";
+      const raw = response.text ?? "";
       if (raw) return JSON.parse(extractJSON(raw));
     } catch (e) {}
   }
