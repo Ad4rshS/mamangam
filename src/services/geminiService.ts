@@ -6,6 +6,12 @@ import { FALLBACK_MATCHES, getFallbackSquad } from "./fallbackData";
 const geminiKey = import.meta.env.VITE_GEMINI_API_KEY || process.env.GEMINI_API_KEY;
 const ai = geminiKey ? new GoogleGenAI({ apiKey: geminiKey }) : null;
 
+if (ai) {
+  console.log("🚀 MamanGam: Gemini AI Service initialized with API Key.");
+} else {
+  console.error("⚠️ MamanGam: Gemini API Key NOT found. Falling back to demo data.");
+}
+
 // Helper: extract JSON from a text response that may have markdown fences
 function extractJSON(text: string): string {
   const fenced = text.match(/```(?:json)?\s*([\s\S]*?)```/);
