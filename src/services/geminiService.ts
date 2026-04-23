@@ -2,8 +2,8 @@ import { GoogleGenAI } from "@google/genai";
 import { Match, Player } from "../types";
 import { FALLBACK_MATCHES, getFallbackSquad } from "./fallbackData";
 
-// Only initialize if API key is provided
-const geminiKey = process.env.GEMINI_API_KEY;
+// Support both VITE_GEMINI_API_KEY (Vite standard) and GEMINI_API_KEY
+const geminiKey = import.meta.env.VITE_GEMINI_API_KEY || process.env.GEMINI_API_KEY;
 const ai = geminiKey ? new GoogleGenAI({ apiKey: geminiKey }) : null;
 
 // Helper: extract JSON from a text response that may have markdown fences
