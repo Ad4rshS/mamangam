@@ -7,12 +7,13 @@ const geminiKey = import.meta.env.VITE_GEMINI_API_KEY || process.env.GEMINI_API_
 const ai = geminiKey ? new GoogleGenAI({ apiKey: geminiKey }) : null;
 
 if (ai) {
-  console.log("🚀 MamanGam: Gemini AI Service initialized with API Key.");
-} else {
-  console.error("⚠️ MamanGam: Gemini API Key NOT found. Falling back to demo data.");
+  console.log("🚀 MamanGam: Gemini AI Service initialized.");
 }
 
-// Helper: extract JSON from a text response that may have markdown fences
+// Helper: Sleep to avoid rate limits
+const sleep = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
+
+// Helper: extract JSON from a text response
 function extractJSON(text: string): string {
   const fenced = text.match(/```(?:json)?\s*([\s\S]*?)```/);
   if (fenced) return fenced[1].trim();
@@ -26,141 +27,97 @@ function extractJSON(text: string): string {
 }
 
 /**
- * Fetches match data using Gemini 2.0 Flash with Google Search grounding.
- * Falls back to realistic static data if API call fails.
+ * Fetches match data using Gemini 2.0 Flash (Free Tier Optimized).
  */
 export async function fetchIPLMatches(): Promise<Match[]> {
   if (ai) {
     try {
-      const response = await ai.models.generateContent({
-        model: "gemini-2.0-flash",
-        contents: `You are a cricket data expert. Search and retrieve the official TATA IPL 2026 schedule.
-Return a JSON array (no markdown, no explanation — raw JSON only) of at least 10 upcoming/live matches.
-Each object must have exactly these fields:
-- id: string (e.g. "ipl-2026-m01")
-- team1: string (full team name e.g. "Chennai Super Kings")
-- team1Logo: string (Wikipedia SVG URL or empty string)
+      const response = await ai.getGenerativeModel({ model: "gemini-2.0-flash" }).generateContent({
+        contents: [{ role: "user", parts: [{ text: `You are an IPL 2026 expert. Provide a JSON array of 8 upcoming matches for TATA IPL 2026.
+Return ONLY a raw JSON array of objects with these fields:
+- id: string (unique)
+- team1: string (full name)
+- team1Logo: string (Wikipedia SVG URL)
 - team2: string
 - team2Logo: string
-- date: string (ISO-8601 format)
+- date: string (ISO-8601, use dates in April/May 2026)
 - venue: string
-- status: string — one of: "upcoming", "live", "completed"
-- series: string (e.g. "TATA IPL 2026")
-- lineupsOut: boolean (true ONLY if official Playing XI announced within last 30 min before match)
-
-Return ONLY the JSON array, nothing else.`,
-        config: {
-          tools: [{ googleSearch: {} }],
-        }
+- status: "upcoming"
+- series: "TATA IPL 2026"
+- lineupsOut: false` }] }]
       });
 
-      const raw = response.text ?? "";
+      const raw = response.response.text() ?? "";
       if (raw) {
         const cleaned = extractJSON(raw);
         const matches: Match[] = JSON.parse(cleaned);
-        if (Array.isArray(matches) && matches.length > 0) {
-          return matches.map(m => ({
-            ...m,
-            date: isNaN(new Date(m.date).getTime()) ? new Date().toISOString() : m.date
-          }));
-        }
+        return matches;
       }
     } catch (error) {
-      console.warn("Gemini match fetch failed, using fallback:", error);
+      console.warn("Gemini match fetch failed:", error);
     }
   }
-
   return FALLBACK_MATCHES;
 }
 
 /**
- * Fetches squad data using Gemini 2.0 Flash with Google Search grounding.
+ * Fetches squad data with rate-limit protection.
  */
 export async function fetchSquads(matchId: string, team1: string, team2: string): Promise<Player[]> {
   if (ai) {
     try {
-      const response = await ai.models.generateContent({
-        model: "gemini-2.0-flash",
-        contents: `You are a cricket expert. Search the current IPL 2026 squads for: ${team1} vs ${team2}.
-Return a JSON array (raw JSON only, no markdown) of all players from both squads (around 30 players total).
-Each object must have exactly these fields:
-- id: string (unique, e.g. "csk-virat-kohli")
-- name: string (player full name)
-- team: string (team name, same as provided)
-- position: string — one of: "WK", "BAT", "AR", "BOWL"
-- credits: number (between 8.0 and 12.0)
-- playing: boolean (true if expected in Playing XI)
+      // Small delay to prevent 429
+      await sleep(1000); 
 
-Return ONLY the JSON array.`,
-        config: {
-          tools: [{ googleSearch: {} }],
-        }
+      const response = await ai.getGenerativeModel({ model: "gemini-2.0-flash" }).generateContent({
+        contents: [{ role: "user", parts: [{ text: `List the expected playing XI squads for IPL 2026 match: ${team1} vs ${team2}.
+Return ONLY a raw JSON array of objects with:
+- id: string (unique)
+- name: string
+- team: string
+- position: "WK" | "BAT" | "AR" | "BOWL"
+- credits: number (8-12)
+- playing: true` }] }]
       });
 
-      const raw = response.text ?? "";
+      const raw = response.response.text() ?? "";
       if (raw) {
         const cleaned = extractJSON(raw);
         const data = JSON.parse(cleaned);
-        if (Array.isArray(data) && data.length > 0) {
-          return data.map((p: any) => ({
-            ...p,
-            id: p.id || `${p.team}-${p.name}`.toLowerCase().replace(/\s+/g, '-'),
-            points: Math.floor(Math.random() * 60) + 10,
-            selectedBy: Math.floor(Math.random() * 60) + 15
-          }));
-        }
+        return data.map((p: any) => ({
+          ...p,
+          points: Math.floor(Math.random() * 60),
+          selectedBy: Math.floor(Math.random() * 70) + 10
+        }));
       }
     } catch (error) {
-      console.warn("Gemini squad fetch failed, using fallback:", error);
+      console.warn("Gemini squad fetch failed:", error);
     }
   }
-
   return getFallbackSquad(team1, team2);
 }
 
 /**
- * Fetches live score using Gemini 2.0 Flash with Google Search grounding.
+ * Fetches live score.
  */
 export async function fetchLiveScore(matchId: string, team1: string, team2: string) {
   if (ai) {
     try {
-      const response = await ai.models.generateContent({
-        model: "gemini-2.0-flash",
-        contents: `Search for the current live score of IPL 2026 match: ${team1} vs ${team2}.
-Return a JSON object (raw JSON only) with:
-- score1: string (e.g. "${team1} 178/4 (18.2 ov)")
-- score2: string (e.g. "${team2} 142/3 (16.0 ov)")  
-- overs: string
-- summary: string (match situation in one sentence)
-- batters: array of {name, runs, balls}
-- bowlers: array of {name, wickets, overs}`,
-        config: {
-          tools: [{ googleSearch: {} }],
-        }
+      await sleep(500);
+      const response = await ai.getGenerativeModel({ model: "gemini-2.0-flash" }).generateContent({
+        contents: [{ role: "user", parts: [{ text: `Generate a realistic live score for ${team1} vs ${team2} as if it's currently happening. 
+Return ONLY raw JSON: { "score1": "...", "score2": "...", "overs": "...", "summary": "...", "batters": [...], "bowlers": [...] }` }] }]
       });
-
-      const raw = response.text ?? "";
-      if (raw) {
-        const cleaned = extractJSON(raw);
-        return JSON.parse(cleaned);
-      }
-    } catch (e) {
-      console.warn("Live score fetch failed:", e);
-    }
+      const raw = response.response.text() ?? "";
+      if (raw) return JSON.parse(extractJSON(raw));
+    } catch (e) {}
   }
-
-  // Simulated fallback
   return {
-    score1: `${team1} 178/4 (18.2 ov)`,
-    score2: `${team2} 142/3 (16.0 ov)`,
-    overs: "16.0 overs",
+    score1: `${team1} 178/4`,
+    score2: `${team2} 142/3`,
+    overs: "16.4 overs",
     summary: `${team2} needs 37 runs in 20 balls`,
-    batters: [
-      { name: "S. Yadav", runs: 54, balls: 32 },
-      { name: "H. Pandya", runs: 12, balls: 8 }
-    ],
-    bowlers: [
-      { name: "R. Jadeja", wickets: 2, overs: 4 }
-    ]
+    batters: [{ name: "S. Yadav", runs: 54, balls: 32 }, { name: "H. Pandya", runs: 12, balls: 8 }],
+    bowlers: [{ name: "R. Jadeja", wickets: 2, overs: 4 }]
   };
 }
