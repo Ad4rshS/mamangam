@@ -3,8 +3,9 @@ import { FALLBACK_MATCHES, getFallbackSquad } from "./fallbackData";
 
 const getApiKey = () => {
   const localKey = typeof window !== 'undefined' ? localStorage.getItem('RAPID_API_KEY') : null;
-  // Use the key provided by the user in the screenshot as default if no local key
-  return localKey || "d79ab6f4d1msh097a89b905609b3p15b02bjsn294b666a0243";
+  const envKey = import.meta.env.VITE_RAPID_API_KEY;
+  // Order: Local Storage (UI input) > Env Variable (Vercel/Local) > Hardcoded Fallback
+  return localKey || envKey || "d79ab6f4d1msh097a89b905609b3p15b02bjsn294b666a0243";
 };
 
 const API_KEY = getApiKey();
