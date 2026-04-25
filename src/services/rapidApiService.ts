@@ -4,12 +4,16 @@ import { FALLBACK_MATCHES, getFallbackSquad } from "./fallbackData";
 const getApiKey = () => {
   const localKey = typeof window !== 'undefined' ? localStorage.getItem('RAPID_API_KEY') : null;
   const envKey = import.meta.env.VITE_RAPID_API_KEY;
-  // Order: Local Storage (UI input) > Env Variable (Vercel/Local) > Hardcoded Fallback
   return localKey || envKey || "d79ab6f4d1msh097a89b905609b3p15b02bjsn294b666a0243";
 };
 
+const getApiHost = () => {
+  const envHost = import.meta.env.VITE_RAPIDAPI_HOST;
+  return envHost || "cricbuzz-cricket.p.rapidapi.com";
+};
+
 const API_KEY = getApiKey();
-const API_HOST = "cricbuzz-cricket.p.rapidapi.com";
+const API_HOST = getApiHost();
 const BASE_URL = `https://${API_HOST}`;
 
 const headers = {
