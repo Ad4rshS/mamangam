@@ -66,17 +66,25 @@ export const getFallbackSquad = (team1: string, team2: string): Player[] => {
         );
     }
     
-    // Fill the rest with generic high quality names for the demo
+    // Realistic names to use instead of generic ones
+    const genericNames = [
+      'David Warner', 'Mitchell Starc', 'Pat Cummins', 'Glenn Maxwell', 
+      'Jos Buttler', 'Quinton de Kock', 'Nicholas Pooran', 'Andre Russell',
+      'Sunil Narine', 'Rashid Khan', 'Trent Boult', 'Kane Williamson',
+      'Shubman Gill', 'Rinku Singh', 'Yashasvi Jaiswal', 'KL Rahul'
+    ];
+    
     const roles: ('WK' | 'BAT' | 'AR' | 'BOWL')[] = ['WK', 'BAT', 'BAT', 'BAT', 'AR', 'AR', 'BOWL', 'BOWL', 'BOWL', 'BOWL', 'BOWL'];
     roles.forEach((role, i) => {
        if (players.filter(p => p.team === team).length < 11) {
+          const nameIndex = (team.length + i) % genericNames.length;
           players.push({
             id: `${team.toLowerCase()}-p-${i}`,
-            name: `${team} Player ${i + 1}`,
+            name: genericNames[nameIndex],
             team: team,
             position: role,
             credits: 8.0 + Math.random() * 2,
-            playing: Math.random() > 0.3,
+            playing: true,
             points: Math.floor(Math.random() * 50),
             selectedBy: Math.floor(Math.random() * 40) + 10
           });

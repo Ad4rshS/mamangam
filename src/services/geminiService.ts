@@ -1,11 +1,16 @@
 import { Match, Player } from "../types";
 import { FALLBACK_MATCHES, getFallbackSquad } from "./fallbackData";
 
-const API_KEY = import.meta.env.VITE_GEMINI_API_KEY;
-const API_URL = "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent";
+const getApiKey = () => {
+  const localKey = typeof window !== 'undefined' ? localStorage.getItem('GEMINI_API_KEY') : null;
+  return localKey || import.meta.env.VITE_GEMINI_API_KEY;
+};
+
+const API_KEY = getApiKey();
+const API_URL = "https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent";
 
 if (API_KEY) {
-  console.log("🚀 MamanGam: API Key detected. Fetching live data...");
+  console.log(`🚀 MamanGam: API Key detected (${API_KEY.startsWith('AIza') ? 'Real' : 'Custom'}). Fetching live data...`);
 } else {
   console.error("⚠️ MamanGam: No API Key found. Using fallback data.");
 }
@@ -15,15 +20,23 @@ const sleep = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
 
 // Helper: Extract JSON from Gemini response
 function extractJSON(text: string): string {
-  const fenced = text.match(/```(?:json)?\s*([\s\S]*?)```/);
-  if (fenced) return fenced[1].trim();
-  const start = text.indexOf('[');
-  const end = text.lastIndexOf(']');
-  if (start !== -1 && end !== -1) return text.slice(start, end + 1);
-  const objStart = text.indexOf('{');
-  const objEnd = text.lastIndexOf('}');
-  if (objStart !== -1 && objEnd !== -1) return text.slice(objStart, objEnd + 1);
-  return text.trim();
+  // Remove markdown code blocks if present
+  const cleaned = text.replace(/```json\s*|\s*```|```\s*/g, "").trim();
+  
+  // Find the first [ or { and the last ] or }
+  const startIdx = Math.min(
+    cleaned.indexOf("[") === -1 ? Infinity : cleaned.indexOf("["),
+    cleaned.indexOf("{") === -1 ? Infinity : cleaned.indexOf("{")
+  );
+  const endIdx = Math.max(
+    cleaned.lastIndexOf("]"),
+    cleaned.lastIndexOf("}")
+  );
+
+  if (startIdx !== Infinity && endIdx !== -1) {
+    return cleaned.slice(startIdx, endIdx + 1);
+  }
+  return cleaned;
 }
 
 /**
@@ -96,9 +109,14 @@ export async function fetchLiveScore(matchId: string, team1: string, team2: stri
     if (text) return JSON.parse(extractJSON(text));
   } catch (e) {}
   return {
-    score1: `${team1} 178/4`, score2: `${team2} 142/3`, overs: "16.4 overs",
-    summary: `${team2} needs 37 runs in 20 balls`,
-    batters: [{ name: "S. Yadav", runs: 54, balls: 32 }, { name: "H. Pandya", runs: 12, balls: 8 }],
-    bowlers: [{ name: "R. Jadeja", wickets: 2, overs: 4 }]
+    score1: `${team1} ${140 + Math.floor(Math.random() * 60)}/${2 + Math.floor(Math.random() * 5)}`,
+    score2: `${team2} ${120 + Math.floor(Math.random() * 60)}/${3 + Math.floor(Math.random() * 4)}`,
+    overs: `${15 + Math.floor(Math.random() * 4)}.${Math.floor(Math.random() * 6)} overs`,
+    summary: `${team2} needs ${20 + Math.floor(Math.random() * 30)} runs in ${18 + Math.floor(Math.random() * 12)} balls`,
+    batters: [
+      { name: "Top Batter", runs: 40 + Math.floor(Math.random() * 30), balls: 25 + Math.floor(Math.random() * 15) },
+      { name: "Middle Order", runs: 10 + Math.floor(Math.random() * 20), balls: 8 + Math.floor(Math.random() * 10) }
+    ],
+    bowlers: [{ name: "Lead Bowler", wickets: Math.floor(Math.random() * 3), overs: 4 }]
   };
 }

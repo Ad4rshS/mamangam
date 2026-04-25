@@ -19,6 +19,8 @@ function AppContent() {
   const [isCreatingContest, setIsCreatingContest] = useState(false);
   const [editingTeam, setEditingTeam] = useState<UserTeam | null>(null);
   const [showSplash, setShowSplash] = useState(true);
+  const [tempApiKey, setTempApiKey] = useState(localStorage.getItem('GEMINI_API_KEY') || '');
+  const [tempRapidKey, setTempRapidKey] = useState(localStorage.getItem('RAPID_API_KEY') || '');
 
   useEffect(() => {
     const timer = setTimeout(() => setShowSplash(false), 2500);
@@ -142,7 +144,7 @@ function AppContent() {
                 </div>
                 <div className="text-center">
                    <h2 className="text-xl font-display font-bold italic tracking-tight">{user?.name}</h2>
-                   <p className="text-[10px] text-gray-500 font-bold uppercase tracking-wider mt-1">Kerala Festival Mode • Lev 14</p>
+                   <p className="text-[10px] text-gray-500 font-bold uppercase tracking-wider mt-1">Player Profile • Season 1</p>
                 </div>
              </div>
 
@@ -152,22 +154,80 @@ function AppContent() {
                     <Trophy className="w-3.5 h-3.5 text-brand-red" />
                     <span className="text-[9px] text-gray-500 font-bold uppercase tracking-widest">Global Rank</span>
                   </div>
-                  <p className="text-xl font-display font-bold italic">#42,910</p>
+                  <p className="text-xl font-display font-bold italic">Top 1%</p>
                 </div>
                 <div className="bg-dark-card p-4 rounded-2xl border border-dark-border shadow-lg">
                   <div className="flex items-center gap-2 mb-2">
                     <Wallet className="w-3.5 h-3.5 text-green-500" />
                     <span className="text-[9px] text-gray-500 font-bold uppercase tracking-widest">Balance</span>
                   </div>
-                  <p className="text-xl font-display font-bold italic">₹0.00 <span className="text-[9px] text-green-500 block">ALWAYS FREE</span></p>
+                  <p className="text-xl font-display font-bold italic">₹{user?.balance?.toFixed(2) || '0.00'} <span className="text-[9px] text-green-500 block">AVAILABLE</span></p>
                 </div>
              </div>
 
-             <div className="space-y-2 mt-4">
+             <div className="space-y-3 mt-4">
+                 <div className="bg-white/5 border border-white/10 p-4 rounded-xl space-y-3">
+                    <div className="flex items-center justify-between">
+                       <span className="text-[10px] font-black uppercase tracking-widest text-gray-400">API Settings</span>
+                    </div>
+                    
+                    <div className="space-y-2">
+                       <label className="text-[9px] font-bold text-gray-500 uppercase">Gemini API Key</label>
+                       <div className="flex gap-2">
+                          <input 
+                             type="password" 
+                             placeholder="AIza..." 
+                             className="flex-1 bg-black/40 border border-white/10 rounded-lg px-3 py-2 text-xs text-white focus:border-brand-red outline-none transition-all"
+                             value={tempApiKey}
+                             onChange={(e) => setTempApiKey(e.target.value)}
+                          />
+                          <button 
+                             onClick={() => {
+                                localStorage.setItem('GEMINI_API_KEY', tempApiKey);
+                                alert('Gemini Key Saved');
+                             }}
+                             className="bg-brand-red text-white text-[9px] font-black px-3 rounded-lg uppercase tracking-tighter"
+                          >
+                             Save
+                          </button>
+                       </div>
+                    </div>
+
+                    <div className="space-y-2 pt-2 border-t border-white/5">
+                       <label className="text-[9px] font-bold text-gray-500 uppercase">RapidAPI Key (Cricbuzz)</label>
+                       <div className="flex gap-2">
+                          <input 
+                             type="password" 
+                             placeholder="Enter RapidAPI Key..." 
+                             className="flex-1 bg-black/40 border border-white/10 rounded-lg px-3 py-2 text-xs text-white focus:border-brand-red outline-none transition-all"
+                             value={tempRapidKey}
+                             onChange={(e) => setTempRapidKey(e.target.value)}
+                          />
+                          <button 
+                             onClick={() => {
+                                localStorage.setItem('RAPID_API_KEY', tempRapidKey);
+                                alert('RapidAPI Key Saved');
+                             }}
+                             className="bg-brand-red text-white text-[9px] font-black px-3 rounded-lg uppercase tracking-tighter"
+                          >
+                             Save
+                          </button>
+                       </div>
+                       <p className="text-[8px] text-gray-600 font-medium leading-tight">Using RapidAPI provides real-time official match data.</p>
+                    </div>
+
+                    <button 
+                       onClick={() => window.location.reload()}
+                       className="w-full mt-2 bg-white/10 hover:bg-white/20 py-2 rounded-lg text-[10px] font-bold uppercase transition-all"
+                    >
+                       Apply & Restart App
+                    </button>
+                 </div>
+
                 <ProfileItem icon={<Trophy />} label="My Rewards" />
                 <ProfileItem icon={<Users />} label="Refer Friends" />
                 <ProfileItem icon={<Zap />} label="Points System" />
-                <ProfileItem icon={<Settings />} label="Settings" />
+                <ProfileItem icon={<Settings />} label="Advanced Settings" />
                 <ProfileItem icon={<LogOut />} label="Log Out" className="text-brand-red border-brand-red/20 mt-4" />
              </div>
           </div>

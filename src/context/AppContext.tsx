@@ -1,6 +1,7 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { UserProfile, UserTeam, Contest, Match, Player } from '../types';
 import { fetchIPLMatches, fetchSquads } from '../services/geminiService';
+import { fetchRapidMatches, fetchRapidSquads } from '../services/rapidApiService';
 import { MATCHES as MOCK_MATCHES, PLAYERS as MOCK_PLAYERS } from '../constants/mockData';
 
 interface AppContextType {
@@ -30,7 +31,11 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
   const fetchMatchSquads = async (matchId: string, team1: string, team2: string) => {
     try {
-      const squad = await fetchSquads(matchId, team1, team2);
+      const hasRapidKey = !!localStorage.getItem('RAPID_API_KEY');
+      const squad = hasRapidKey 
+        ? await fetchRapidSquads(matchId) 
+        : await fetchSquads(matchId, team1, team2);
+        
       if (squad && squad.length > 0) {
         setPlayers(prev => ({ ...prev, [matchId]: squad }));
       }
@@ -42,15 +47,25 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const refreshData = async () => {
     try {
       setLoading(true);
-      const realMatches = await fetchIPLMatches();
+      const hasRapidKey = !!localStorage.getItem('RAPID_API_KEY');
+      
+      console.log(`📡 MamanGam: Fetching matches via ${hasRapidKey ? 'RapidAPI' : 'Gemini'}...`);
+      
+      const realMatches = hasRapidKey 
+        ? await fetchRapidMatches() 
+        : await fetchIPLMatches();
+
       if (realMatches && realMatches.length > 0) {
         setMatches(realMatches);
         
         // Fetch squads for these matches concurrently
-        const squadPromises = realMatches.slice(0, 3).map(match => 
-           fetchSquads(match.id, match.team1, match.team2)
-             .then(squad => ({ id: match.id, squad }))
-        );
+        const squadPromises = realMatches.slice(0, 3).map(match => {
+          if (hasRapidKey) {
+            return fetchRapidSquads(match.id).then(squad => ({ id: match.id, squad }));
+          } else {
+            return fetchSquads(match.id, match.team1, match.team2).then(squad => ({ id: match.id, squad }));
+          }
+        });
         
         const results = await Promise.all(squadPromises);
         setPlayers(prev => {

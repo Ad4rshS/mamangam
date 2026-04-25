@@ -191,12 +191,7 @@ export default function MatchDetails({ match, onBack, onCreateTeam, onCreateCont
                 <span className="text-[9px] text-brand-red font-black uppercase">Live Updates</span>
               </div>
               <div className="divide-y divide-white/5">
-                {[
-                  { name: 'Ruturaj Gaikwad', team: 'CSK', points: 124, selected: '92%' },
-                  { name: 'Suryakumar Yadav', team: 'MI', points: 98, selected: '95%' },
-                  { name: 'Jasprit Bumrah', team: 'MI', points: 76, selected: '98%' },
-                  { name: 'Ravindra Jadeja', team: 'CSK', points: 85, selected: '88%' },
-                ].map((s, i) => (
+                {(players[match.id] || []).slice(0, 8).sort((a, b) => b.points - a.points).map((s, i) => (
                   <div key={i} className="p-4 flex items-center justify-between hover:bg-white/[0.02]">
                     <div className="flex flex-col">
                       <span className="text-xs font-bold text-white">{s.name}</span>
@@ -205,15 +200,18 @@ export default function MatchDetails({ match, onBack, onCreateTeam, onCreateCont
                     <div className="flex gap-8 text-right">
                        <div className="flex flex-col">
                           <span className="text-[9px] text-gray-500 font-bold uppercase">Points</span>
-                          <span className="text-xs font-black italic">{s.points}</span>
+                          <span className="text-xs font-black italic">{s.points || 0}</span>
                        </div>
                        <div className="flex flex-col">
                           <span className="text-[9px] text-gray-500 font-bold uppercase">Sel %</span>
-                          <span className="text-xs font-bold text-white">{s.selected}</span>
+                          <span className="text-xs font-bold text-white">{s.selectedBy}%</span>
                        </div>
                     </div>
                   </div>
                 ))}
+                {(players[match.id] || []).length === 0 && (
+                  <div className="p-8 text-center text-gray-500 text-[10px] font-bold uppercase">No player stats available yet</div>
+                )}
               </div>
             </div>
           </div>
@@ -234,7 +232,7 @@ export default function MatchDetails({ match, onBack, onCreateTeam, onCreateCont
           <div>
             <h2 className="font-bold text-sm leading-tight uppercase tracking-tight">{match.team1} <span className="text-gray-600 font-medium italic">vs</span> {match.team2}</h2>
             <p className="text-[10px] text-gray-400 font-bold tracking-widest uppercase opacity-70">
-              {match.status === 'live' ? 'Live Match' : 'Today, 7:30 PM'} • {match.venue.split(',')[0]}
+              {match.status === 'live' ? 'Live Match' : new Date(match.date).toLocaleDateString([], { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' })} • {match.venue.split(',')[0]}
             </p>
           </div>
         </div>
